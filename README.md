@@ -24,11 +24,8 @@ El código original, desarrollado en Python (Jupyter Notebook), ha sido migrado 
 ```
 .
 ├── README.md                                    # Documentación principal
-├── procesos_estocasticos.Rmd                   # Análisis principal en RMarkdown
-├── procesos_estocasticos.html                  # Reporte renderizado en HTML
-├── data/                                        # Conjuntos de datos (cuando aplicable)
-├── figures/                                     # Visualizaciones generadas
-└── codigo2_tarea_examen_procesos_estocasticos.ipynb  # Implementación original en Python
+├── Mov Browniano & Black-Scholes.Rmd            # Análisis principal en RMarkdown
+├── Mov Browniano & Black-Scholes.html           # Reporte renderizado en HTML
 ```
 
 ## Instrucciones de Implementación
