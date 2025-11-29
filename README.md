@@ -145,8 +145,8 @@ N = 5000: r ∈ {500, 1000, 2500}
 
 | Metodología | Valor del Derivativo | Error Relativo |
 |-------------|---------------------|----------------|
-| Black-Scholes | $X.XXXX | - |
-| Monte Carlo (100K) | $X.XXXX | ~X.XX% |
+| Black-Scholes | $13.0189 | - |
+| Monte Carlo (100K) | $12.9987 | ~	0.16%% |
 
 ### Propiedades Verificadas
 
