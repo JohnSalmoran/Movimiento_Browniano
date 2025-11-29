@@ -14,7 +14,7 @@ El código original, desarrollado en Python (Jupyter Notebook), ha sido migrado 
 ## Objetivos del Análisis
 
 1. **Verificar la propiedad de martingala** en caminatas aleatorias mediante ajuste de probabilidad p*
-2. **Analizar procesos reescalados** $W^(r)$ para diferentes parámetros de escala
+2. **Analizar procesos reescalados** $W^{(r)}$ para diferentes parámetros de escala
 3. **Modelar evolución de precios** utilizando procesos estocásticos exponenciales
 4. **Comparar metodologías de valoración** de opciones (numérica vs analítica)
 5. **Validar convergencia estadística** de simulaciones Monte Carlo
