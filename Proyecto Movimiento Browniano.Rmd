@@ -1,0 +1,323 @@
+---
+title: "Simulación de Movimiento Browniano y Proceso Geométrico"
+author: "Jonathan Ivan Salmoran Acuña"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+# Librerías necesarias (aunque los gráficos actuales usan base R, mantenemos estas si se planea expandir)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+# Introducción
+
+En este proyecto simularemos las trayectorias de caminatas aleatorias reescaladas para obtener una aproximación a una trayectoria de un Movimiento Browniano $(W_t, t \in [0, 1])$, y así poder aproximar un movimiento browniano geométrico definido como:
+
+$$ S_t = S_0 \cdot e^{-\alpha t + W_t}, \quad t \in [0, 1] $$
+
+# Parámetros iniciales
+
+Definimos los parámetros globales para la simulación:
+
+```{r params}
+set.seed(42) # Semilla para reproducibilidad
+
+alpha <- 0.042 # Tasa libre de riesgo (bonos del tesoro norteamericano)
+S0 <- 110     # Valor inicial del activo
+
+# Valores de N (pasos de la caminata) y r (resolución del Browniano)
+N_values <- c(100, 500, 1000, 5000)
+r_values <- list(
+  "100"  = c(10, 20, 50),
+  "500"  = c(50, 100, 250),
+  "1000" = c(100, 200, 500),
+  "5000" = c(500, 1000, 2500)
+)
+```
+
+# Cálculo de la probabilidad $p^*$
+
+La probabilidad $p^*$ se calcula utilizando la fórmula derivada para los momentos del proceso:
+
+$$ 
+p^* = \frac{-(a-b)^2 + \sqrt{(a-b)^4 - 4(a-b)^2 \cdot 2\left(e^{\alpha}-1\right)}}{-2 \times (a-b)^2}
+$$
+con $a:$la ganancia dado que el activo subió de precio y $b:$ la pérdida en el caso contrarios
+
+```{r p_calculation}
+a <- 1.1 # La ganancia de haber resultado una subida en el activo
+b <- -0.1 # La perdida en el caso contrario
+alpha <- 0.04 #Tasa libre de riesgo (bonos del tesoro americano)
+ 
+  discriminante <- (a-b)^4 - 4 * (a-b)^2 * 2 * (exp(alpha)-1)
+  
+  if ((a-b) == 0) {
+    stop("Error: a no puede ser igual a b (división por cero)")
+  }
+  
+  if (discriminante < 0) {
+    stop("Error: La expresión dentro de la raíz cuadrada es negativa")
+  }
+  
+  numerador <- -(a-b)^2 + sqrt(discriminante)
+  denominador <- -2 * (a-b)^2
+
+p_star <- numerador/denominador
+
+cat(sprintf("Valor calculado de p*: %.6f\n", p_star))
+```
+
+# Simulación y Análisis
+
+A continuación, iteramos sobre los diferentes valores de $N$ para analizar la convergencia de las trayectorias.
+
+```{r simulaciones, fig.width=8, fig.height=5}
+# Inicializar tabla de resumen
+summary_table <- data.frame(
+  N = integer(),
+  S_N = numeric(),
+  Z_N = numeric(),
+  W1_final = numeric(),
+  Geom_final = numeric()
+)
+
+for (N in N_values) {
+  
+  # --- Encabezado de sección en consola ---
+  cat(paste0(strrep("=", 60), "\n"))
+  cat(sprintf("SIMULACIÓN PARA N = %d\n", N))
+  cat(paste0(strrep("=", 60), "\n"))
+  
+  # ----------------------------------------------------------------
+  # a) GENERACIÓN DE LA MUESTRA ALEATORIA Y TRAYECTORIAS
+  # ----------------------------------------------------------------
+  
+  # 1. Generar variables aleatorias X_i
+  # Usamos runif vectorizado para eficiencia
+  u <- runif(N)
+  X <- ifelse(u <= p_star, 1.1, -0.1)
+  # 2. Calcular S_k (suma acumulada)
+  S <- c(0, cumsum(X))
+  
+  # 3. Esperanza teórica
+  EX <- p_star * 1.1 + (1 - p_star) * (-0.1)
+  
+  # 4. Calcular Z_k (proceso centrado: S_k - k*E[X])
+  k_vals <- 0:N
+  Z <- S - (k_vals * EX)
+  
+  # 5. Graficar S_k y Z_k
+  y_range <- range(c(S, Z))
+  plot(k_vals, S, type="l", lwd=1.5, col="blue",
+       main = bquote(paste("Trayectorias ", S[k], " y ", Z[k], " (N = ", .(N), ")")),
+       xlab = "k (pasos)", ylab = "Valor",
+       ylim = y_range + c(-0.1, 0.1) * diff(y_range), # Margen del 10%
+       las = 1) # Etiquetas del eje Y horizontales
+  lines(k_vals, Z, col="red", lwd=1.5)
+  legend("topleft", legend=c(expression(S[k] ~ "(Suma Acumulada)"), 
+                             expression(Z[k] ~ "(Proceso Centrado)")),
+         col=c("blue", "red"), lwd=1.5, bty="n", cex=0.8)
+  grid(col = "gray", lty = "dotted")
+  
+  # ----------------------------------------------------------------
+  # b) MOVIMIENTOS BROWNIANOS ESCALADOS
+  # ----------------------------------------------------------------
+  
+  r_list <- r_values[[as.character(N)]]
+  t_common <- seq(0, 1, length.out = max(N, 1000)) # Malla común
+  
+  # Contenedor para graficar
+  W_plots <- list()
+  
+  for (r in r_list) {
+    # Incrementos normales
+    dt <- 1/r
+    increments <- rnorm(r, mean=0, sd=sqrt(dt))
+    W <- c(0, cumsum(increments))
+    t_grid <- seq(0, 1, by=dt)
+    
+    # Interpolación
+    W_interp <- approx(t_grid, W, xout=t_common)$y
+    W_plots[[paste0("r", r)]] <- W_interp
+  }
+  
+  # Graficar Brownianos
+  cols <- c("darkblue", "firebrick", "darkgreen")
+  all_W_vals <- unlist(W_plots)
+  ylim_W <- range(all_W_vals)
+  
+  plot(NULL, xlim=c(0,1), ylim=ylim_W + c(-0.1, 0.1)*diff(ylim_W),
+       main = bquote(paste("Movimiento Browniano ", W[t]^{(r)}, " (N = ", .(N), ")")),
+       xlab = "t", ylab = expression(W[t]), las=1)
+  grid()
+  
+  for(i in seq_along(r_list)) {
+    lines(t_common, W_plots[[i]], col=cols[i], lwd=1.5)
+  }
+  legend("topleft", legend=paste("r =", r_list), col=cols, lwd=1.5, bty="n", cex=0.8)
+  
+  # ----------------------------------------------------------------
+  # c) PROCESO GEOMÉTRICO
+  # ----------------------------------------------------------------
+  
+  # Generar W^(N) (Browniano base para el proceso geométrico)
+  incrN <- rnorm(N, mean=0, sd=sqrt(1/N))
+  WN <- c(0, cumsum(incrN))
+  tN_grid <- seq(0, 1, length.out=N+1)
+  
+  # Interpolación
+  WN_interp <- approx(tN_grid, WN, xout=t_common)$y
+  
+  # Cálculo del proceso: S_t = S0 * exp(-alpha*t + W_t)
+  geom_proc <- S0 * exp(-alpha * t_common + WN_interp)
+  
+  # Graficar
+  ylim_geom <- range(c(geom_proc, S0))
+  plot(t_common, geom_proc, type="l", lwd=1.5, col="purple",
+       main = bquote(paste("Proceso Geométrico ", .(S0) %.% e^{-alpha %.% t + W[t]}, " (N = ", .(N), ")")),
+       xlab = "t", ylab = "Precio",
+       ylim = ylim_geom + c(-0.1, 0.1)*diff(ylim_geom), las=1)
+  abline(h=S0, lty=2, col="gray50")
+  grid()
+  
+  # Guardar resultados
+  summary_table <- rbind(summary_table, data.frame(
+    N = N,
+    S_N = S[N + 1],
+    Z_N = Z[N + 1],
+    W1_final = WN_interp[length(WN_interp)],
+    Geom_final = geom_proc[length(geom_proc)]
+  ))
+}
+```
+
+# Análisis y Conclusiones
+
+## Tabla Resumen de Resultados
+
+```{r results_table}
+knitr::kable(summary_table, 
+             digits = 4,
+             caption = "Valores finales de la simulación para distintos N",
+             col.names = c("N", "$S_N$", "$Z_N$", "$W^{(N)}_1$", "Geom. Final"))
+```
+
+## Estadísticas Descriptivas
+
+Analizamos la consistencia de la simulación verificando los momentos teóricos de $W(1)$.
+
+```{r stats_check}
+media_w <- mean(summary_table$W1_final)
+sd_w <- sd(summary_table$W1_final)
+
+cat(sprintf("Media muestral de W(1):  %.4f (Teórico: 0)\n", media_w))
+cat(sprintf("Desv. Est. de W(1):      %.4f (Teórico: 1)\n", sd_w))
+```
+
+## Conclusiones del Estudio
+
+**Sobre las trayectorias $S_k$ y $Z_k$:**
+
+1. **Tendencia de $S_k$**: La suma acumulada muestra una deriva clara debido a que $E[X] \neq 0$.
+2. **Propiedad de Martingala en $Z_k$**: Al centrar el proceso restando la esperanza acumulada $k \cdot E[X]$, recuperamos un comportamiento oscilatorio alrededor de cero, consistente con una martingala.
+
+**Sobre el Movimiento Browniano y el Proceso Geométrico:**
+
+3. **Convergencia (Teorema de Donsker)**: Al aumentar la resolución $r$ y el número de pasos $N$, las trayectorias discretas se suavizan, convergiendo en distribución al proceso continuo.
+4. **Comportamiento del Precio**: El proceso geométrico simulado refleja la dinámica de un activo bajo el modelo de Black-Scholes (sin volatilidad adicional $\sigma$ en el exponente en este ejercicio específico), donde el precio evoluciona estocásticamente a partir de $S_0 = 110$.
+
+
+# Simulación de Monte Carlo para Valoración de Opción Call Europea
+
+## Parámetros de la Opción
+
+```{r parameters, echo=TRUE}
+# Establecer semilla para reproducibilidad
+set.seed(42)
+
+# Parámetros de la opción
+alpha <- 0.04  # Tasa libre de riesgo
+S0 <- 110      # Precio inicial del activo
+K <- 113       # Precio de ejercicio
+N <- 100000    # Número de simulaciones
+```
+
+## Simulación de Monte Carlo
+
+```{r monte-carlo, echo=TRUE}
+# Simular variables aleatorias X1 siguiendo distribución lognormal
+muestras_X1 <- rlnorm(N, meanlog = 0, sdlog = sqrt(2 * alpha))
+
+# Calcular el payoff descontado para cada simulación
+valores_payoff <- pmax(exp(-alpha) * (S0 * muestras_X1 - K), 0)
+
+# Estimar el valor de la opción como el promedio de los payoffs
+valor_montecarlo <- mean(valores_payoff)
+```
+
+**Resultado Monte Carlo:** `r sprintf("%.4f", valor_montecarlo)`
+
+## Fórmula de Black-Scholes
+
+```{r black-scholes, echo=TRUE}
+# Parámetros de la opción para Black-Scholes
+S0_bs <- 110  # Precio inicial del activo
+K_bs <- 113   # Precio de ejercicio
+r_bs <- 0.04  # Tasa libre de riesgo
+T_bs <- 1     # Tiempo hasta expiración
+sigma_bs <- sqrt(2 * 0.04)  # Volatilidad 
+
+# Cálculo de parámetros d1 y d2
+d1 <- (log(S0_bs/K_bs) + (r_bs + 0.5 * sigma_bs^2) * T_bs) / (sigma_bs * sqrt(T_bs))
+d2 <- d1 - sigma_bs * sqrt(T_bs)
+
+# Cálculo del precio de la opción call
+call_price <- S0_bs * pnorm(d1) - K_bs * exp(-r_bs * T_bs) * pnorm(d2)
+```
+
+**Resultado Black-Scholes:** `r sprintf("%.4f", call_price)`
+
+## Comparación de Métodos
+
+```{r comparison, echo=TRUE}
+diferencia <- abs(valor_montecarlo - call_price)
+error_relativo <- (diferencia / call_price) * 100
+```
+
+### Resumen de Resultados
+
+| Método | Valor de la Opción |
+|--------|-------------------|
+| Monte Carlo | `r sprintf("%.4f", valor_montecarlo)` |
+| Black-Scholes | `r sprintf("%.4f", call_price)` |
+| **Diferencia** | **`r sprintf("%.4f", diferencia)`** |
+| **Error Relativo** | **`r sprintf("%.2f%%", error_relativo)`** |
+
+## Análisis de la Simulación
+
+```{r analysis, echo=FALSE}
+# Análisis adicional de la simulación
+desviacion_estandar <- sd(valores_payoff)
+error_estandar <- desviacion_estandar / sqrt(N)
+intervalo_confianza <- c(
+  valor_montecarlo - 1.96 * error_estandar,
+  valor_montecarlo + 1.96 * error_estandar
+)
+```
+
+**Estadísticas de la simulación Monte Carlo:**
+
+- Desviación estándar: `r sprintf("%.4f", desviacion_estandar)`
+
+- Error estándar: `r sprintf("%.4f", error_estandar)`
+
+- Intervalo de confianza (95%): [`r sprintf("%.4f", intervalo_confianza[1])`, `r sprintf("%.4f", intervalo_confianza[2])`]
+
+
+La simulación de Monte Carlo proporciona una aproximación al valor teórico de Black-Scholes, con un error relativo del `r sprintf("%.2f%%", error_relativo)`.
