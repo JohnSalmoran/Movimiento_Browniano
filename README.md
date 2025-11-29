@@ -1,139 +1,255 @@
-# Simulación de Movimiento Browniano y Proceso Geométrico
+# Análisis de Procesos Estocásticos: Caminatas Aleatorias y Valoración de Opciones
 
-Proyecto de simulación estocástica para aproximar trayectorias de Movimiento Browniano mediante caminatas aleatorias reescaladas y su aplicación en modelos financieros.
+## Resumen Ejecutivo
 
-## Descripción
+Este proyecto constituye una implementación integral en R para el análisis de **procesos estocásticos**, con aplicaciones específicas en modelado financiero. El desarrollo incluye:
 
-Este proyecto implementa simulaciones de:
+- Análisis de caminatas aleatorias y verificación de propiedades de martingalas
+- Implementación de procesos reescalados y estudio de convergencia
+- Modelado de precios de activos mediante procesos geométricos
+- Sistemas de valoración de opciones utilizando métodos Monte Carlo y Black-Scholes
 
-- **Caminatas aleatorias** discretas con reescalamiento
-- **Movimiento Browniano** estándar $W_t$ en el intervalo $[0, 1]$
-- **Proceso Geométrico Browniano** para modelar precios de activos
-- **Valoración de opciones europeas** mediante Monte Carlo y Black-Scholes
+El código original, desarrollado en Python (Jupyter Notebook), ha sido migrado integralmente a R utilizando RMarkdown para garantizar reproducibilidad y documentación exhaustiva.
 
-## Contenido
+## Objetivos del Análisis
 
-### 1. Simulación de Caminatas Aleatorias
+1. **Verificar la propiedad de martingala** en caminatas aleatorias mediante ajuste de probabilidad p*
+2. **Analizar procesos reescalados** $W^(r)$ para diferentes parámetros de escala
+3. **Modelar evolución de precios** utilizando procesos estocásticos exponenciales
+4. **Comparar metodologías de valoración** de opciones (numérica vs analítica)
+5. **Validar convergencia estadística** de simulaciones Monte Carlo
 
-Se generan trayectorias discretas $S_k$ y su versión centrada $Z_k$ para diferentes valores de pasos $N$ (100, 500, 1000, 5000), demostrando:
+## Estructura del Proyecto
 
-- La convergencia al Movimiento Browniano (Teorema de Donsker)
-- Propiedades de martingala en el proceso centrado
-- Efecto del número de pasos en la suavidad de las trayectorias
+```
+.
+├── README.md                                    # Documentación principal
+├── procesos_estocasticos.Rmd                   # Análisis principal en RMarkdown
+├── procesos_estocasticos.html                  # Reporte renderizado en HTML
+├── data/                                        # Conjuntos de datos (cuando aplicable)
+├── figures/                                     # Visualizaciones generadas
+└── codigo2_tarea_examen_procesos_estocasticos.ipynb  # Implementación original en Python
+```
 
-### 2. Proceso Geométrico Browniano
+## Instrucciones de Implementación
 
-Modelo de evolución de precios de activos:
+### Prerrequisitos del Sistema
 
-$$S_t = S_0 \cdot e^{-\alpha t + W_t}$$
-
-donde:
-- $S_0 = 110$ (precio inicial)
-- $\alpha = 0.042$ (tasa libre de riesgo)
-- $W_t$ es un Movimiento Browniano estándar
-
-### 3. Valoración de Opciones Call Europeas
-
-Comparación de dos métodos para valorar una opción call:
-
-- **Simulación Monte Carlo** (100,000 iteraciones)
-- **Fórmula de Black-Scholes** (solución analítica)
-
-#### Parámetros de la opción:
-- Precio inicial: $S_0 = 110$
-- Strike: $K = 113$
-- Tasa libre de riesgo: $r = 0.04$
-- Tiempo a vencimiento: $T = 1$ año
-- Volatilidad: $\sigma = \sqrt{2 \times 0.04}$
-
-## Requisitos
-
-### Librerías de R
+- R (versión 4.0 o superior)
+- RStudio (entorno recomendado)
+- Paquetes de R requeridos:
 
 ```r
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(knitr)
+install.packages(c(
+  "ggplot2",      # Visualización de datos
+  "gridExtra",    # Composición de gráficos
+  "dplyr",        # Manipulación de datos
+  "knitr",        # Generación de reportes
+  "rmarkdown"     # Documentos dinámicos
+))
 ```
 
-### Instalación
+### Procedimiento de Instalación
+
+1. **Clonar el repositorio:**
+
+```bash
+git clone https://github.com/JohnSalmoran/Movimiento_Browniano
+cd Movimiento_Browniano
+```
+
+2. **Abrir el documento RMarkdown:**
 
 ```r
-install.packages(c("ggplot2", "dplyr", "tidyr", "knitr"))
+# En entorno RStudio
+file.edit("Mov Browniano & Black-Scholes.Rmd")
 ```
 
-## Uso
-
-1. Abrir el archivo `Proyecto Movimiento Browniano.Rmd` en RStudio
-2. Ejecutar todos los chunks o renderizar el documento completo:
+3. **Generar el reporte final:**
 
 ```r
-rmarkdown::render("Proyecto Movimiento Browniano.Rmd")
+# Opción 1: Interfaz RStudio - Seleccionar "Knit"
+# Opción 2: Consola de R
+rmarkdown::render("Mov Browniano & Black-Scholes.Rmd")
 ```
 
-3. El output HTML mostrará:
-   - Gráficos de las trayectorias simuladas
-   - Tablas resumen de resultados
-   - Análisis estadístico de convergencia
-   - Comparación de métodos de valoración
+## Marco Metodológico
 
-## Resultados Esperados
+### Ejercicio 1: Caminatas Aleatorias y Propiedades de Martingalas
 
-### Convergencia del Browniano
+#### 1a. Caminata Aleatoria Fundamental
+- Cálculo de probabilidad p* para garantizar propiedad de martingala
+- Generación de caminata original S_k
+- Proceso ajustado Z_k (martingala)
+- Análisis comparativo mediante visualización
 
-A medida que $N$ y $r$ aumentan, las trayectorias discretas convergen a procesos continuos suaves, validando el Teorema de Donsker.
+**Parámetros de configuración:**
+- a = 1.1 (incremento positivo)
+- b = -0.1 (incremento negativo)
+- α = 0.04 (tasa libre de riesgo)
+- N = 100 (número de iteraciones)
 
-### Valoración de Opciones
+#### 1b. Procesos Reescalados
+- Generación de $W^(r)$ para múltiples valores de r
+- Interpolación lineal de procesos
+- Análisis de convergencia en función de r
 
-La simulación Monte Carlo proporciona resultados con error relativo típicamente < 1% respecto a la fórmula de Black-Scholes, con intervalos de confianza del 95% bien definidos.
+**Valores de r analizados:** 10, 20, 50
 
-## Estructura del Código
+#### 1c. Modelado de Procesos de Precios
+- Modelado exponencial: S(t) = S₀ · exp(-αt + W^(r)(t))
+- Evolución temporal de precios
+- S₀ = 110 (valor inicial)
 
+#### 1d. Análisis Multidimensional
+- Múltiples configuraciones de N y r
+- Validación numérica de parámetros
+- Comparación de trayectorias estocásticas
+
+**Configuraciones evaluadas:**
 ```
-├── Parámetros iniciales (semilla, tasas, valores de N y r)
-├── Cálculo de probabilidad p* para la caminata aleatoria
-├── Simulaciones principales:
-│   ├── Generación de trayectorias S_k y Z_k
-│   ├── Movimientos Brownianos con diferentes resoluciones
-│   └── Proceso Geométrico para modelar precios
-├── Monte Carlo para opciones:
-│   ├── Simulación de payoffs
-│   ├── Estimación del valor esperado
-│   └── Cálculo de intervalos de confianza
-└── Black-Scholes:
-    ├── Cálculo de d1 y d2
-    └── Fórmula cerrada para call europeo
+N = 500:  r ∈ {50, 100, 250}
+N = 1000: r ∈ {100, 200, 500}
+N = 5000: r ∈ {500, 1000, 2500}
 ```
 
-## Fundamentos Teóricos
+### Ejercicio 2: Valoración de Instrumentos Derivados
 
-### Teorema de Donsker
+#### 2a. Comparación Metodológica: Monte Carlo vs Black-Scholes
 
-Las caminatas aleatorias reescaladas convergen en distribución al Movimiento Browniano cuando el número de pasos tiende a infinito.
+**Parámetros del instrumento:**
+- S₀ = 110 (precio subyacente)
+- K = 113 (precio de ejercicio)
+- r = 0.04 (tasa libre de riesgo)
+- T = 1 (horizonte temporal)
+- σ = √(2α) (parámetro de volatilidad)
 
-### Modelo de Black-Scholes
+**Metodologías implementadas:**
 
-Asume que los precios de los activos siguen un proceso geométrico browniano con drift y volatilidad constantes, permitiendo valoración analítica de opciones europeas.
+1. **Simulación Monte Carlo:**
+   - 100,000 trayectorias simuladas
+   - Variables aleatorias lognormales
+   - Estimación del valor esperado del payoff
 
-### Método de Monte Carlo
+2. **Modelo Black-Scholes:**
+   - Solución analítica cerrada
+   - Cálculo de parámetros d₁ y d₂
+   - Aplicación de función de distribución normal acumulada
 
-Estima el valor esperado del payoff descontado mediante simulación:
+3. **Análisis de Convergencia:**
+   - Múltiples tamaños muestrales: {100, 500, 1K, 5K, 10K, 50K, 100K}
+   - Visualización de convergencia en escala logarítmica
+   - Cálculo de error absoluto y relativo
 
-$$C_0 = e^{-rT} \mathbb{E}[\max(S_T - K, 0)]$$
+## Resultados Cuantitativos
 
-## Autor
+### Validación Numérica
 
-Jonathan Ivan Salmoran Acuña
+| Metodología | Valor del Derivativo | Error Relativo |
+|-------------|---------------------|----------------|
+| Black-Scholes | $X.XXXX | - |
+| Monte Carlo (100K) | $X.XXXX | ~X.XX% |
 
-## Notas
+### Propiedades Verificadas
 
-- La semilla `set.seed(42)` garantiza reproducibilidad de resultados
-- Los gráficos utilizan principalmente funciones de base R para eficiencia
-- El error relativo típico entre Monte Carlo y Black-Scholes es < 1% con N=100,000
+Propiedad de martingala para Z_k con p* calculado  
+Convergencia de W^(r) a proceso de Wiener  
+Convergencia de Monte Carlo a solución analítica  
+Consistencia entre metodologías de valoración
 
-## Referencias
+## Especificaciones Técnicas
 
-- Teorema de Donsker (Principio de Invarianza de Donsker)
-- Black, F. & Scholes, M. (1973). "The Pricing of Options and Corporate Liabilities"
-- Modelo de Black-Scholes-Merton para derivados financieros
+### Funciones Principales
+
+#### Cálculo de Probabilidad Ajustada
+```r
+calcular_p_estrella(a, b, alpha)
+# Retorna: probabilidad ajustada para martingala
+```
+
+#### Generación de Caminatas Aleatorias
+```r
+generar_caminata_aleatoria(N, a, b, alpha)
+# Retorna: lista(S_k, Z_k, p_estrella)
+```
+
+#### Proceso Reescalado
+```r
+generar_proceso_reescalado(N, a, b, alpha, r)
+# Retorna: data.frame(t, W_r, r)
+```
+
+#### Valoración de Derivativos
+```r
+simulacion_montecarlo(N, semilla)
+black_scholes_call()
+# Retornan: valor del instrumento
+```
+
+## Visualizaciones Generadas
+
+1. **Caminatas Aleatorias:** Comparación S_k vs Z_k
+2. **Procesos Reescalados:** W^(r) para múltiples valores de r
+3. **Evolución de Precios:** Trayectorias de precios simuladas
+4. **Convergencia Monte Carlo:** Error vs tamaño muestral
+5. **Comparación Metodológica:** Monte Carlo vs Black-Scholes
+
+## Referencias Teóricas
+
+### Fundamentos Conceptuales
+
+- **Martingala:** Proceso estocástico donde E[X_{n+1} | ℱ_n] = X_n
+- **Proceso de Wiener:** Límite de caminatas aleatorias reescaladas
+- **Modelo Black-Scholes:** dS = μS dt + σS dW
+- **Monte Carlo:** Método numérico basado en muestreo aleatorio
+
+### Formulación Matemática
+
+**Probabilidad p*:**
+```
+p* = (-(a-b)² + √((a-b)⁴ - 4(a-b)² · 2 · (e^α - 1))) / (-2(a-b)²)
+```
+
+**Black-Scholes Call:**
+```
+C = S₀·N(d₁) - K·e^(-rT)·N(d₂)
+d₁ = (ln(S₀/K) + (r + σ²/2)T) / (σ√T)
+d₂ = d₁ - σ√T
+```
+
+## Resolución de Incidencias
+
+### Incidencia: "NaN en cálculo de p*"
+**Causa:** Parámetros incompatibles (a muy pequeño)  
+**Solución:** Utilizar a = 1.1 en lugar de a = 0.09
+
+
+### Advertencia: "p* fuera de rango [0,1]"
+**Causa:** Valores de r incompatibles con parámetros  
+**Solución:** El código filtra automáticamente estos casos
+
+## Contribuciones al Proyecto
+
+Las contribuciones son bienvenidas siguiendo el protocolo establecido:
+
+1. Realizar fork del proyecto
+2. Crear rama para la característica (`git checkout -b feature/nueva-caracteristica`)
+3. Commit de cambios (`git commit -m 'Agregar nueva característica'`)
+4. Push a la rama (`git push origin feature/nueva-caracteristica`)
+5. Abrir Pull Request
+
+## Consideraciones Adicionales
+
+### Diferencias con la Implementación Python Original
+
+- **Sintaxis adaptada** a convenciones de R
+- **Visualizaciones mejoradas** con ggplot2
+- **Validación robusta** de parámetros numéricos
+- **Documentación integrada** con RMarkdown
+- **Reproducibilidad** mediante semillas aleatorias
+
+
+---
+
+**Última actualización:** Noviembre 2025
+**Versión:** 1.0.0
